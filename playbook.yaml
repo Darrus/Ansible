@@ -1,0 +1,55 @@
+---
+- name: "Add SSH Keys to known_hosts"
+  hosts: localhost
+  tasks:
+    - known_hosts:
+        name: "{{ hostvars[item].ansible_host }}"
+        state: present
+        key: "{{ lookup('pipe', 'ssh-keyscan -t ed25519 {{ hostvars[item].ansible_host }}') }}"
+      with_items: "{{ groups['jenkins_servers'] }}"
+- name: 'Setup jenkins repo'
+  hosts: jenkins_servers
+  become: true
+  tasks:
+    - name: "Download jenkins.repo"
+      command: wget -O /etc/yum.repos.d/jenkins.repo \ https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    - name: "Set jenkins GPG key"
+      command: rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+    - name: "Upgrade all packages"
+      dnf:
+        name: "*"
+        state: latest
+- name: 'Install jenkins'
+  hosts: jenkins_servers
+  become: true
+  tasks:
+    - name: 'Get details about installed packages'
+      ansible.builtin.package_facts:
+    - name: 'Install jenkins prerequisite fontconfig'
+      dnf:
+        name: fontconfig
+        state: latest
+      when: not(ansible_facts.packages['fontconfig'][0] is defined)
+    - name: 'Install jenkins prerequiste java-17'
+      dnf:
+        name: java-17-openjdk
+        state: latest
+      when: not(ansible_facts.packages['java-17-openjdk'][0] is defined)
+    - name: 'Install jenkins'
+      dnf:
+        name: jenkins
+        state: latest
+      when: not(ansible_facts.packages['jenkins'][0] is defined)
+    - name: 'Start jenkins'
+      service:
+        name: jenkins
+        state: started
+        enabled: true
+    - name: 'Get service facts'
+      service_facts:
+    - name: 'Check if jenkins is running'
+      ansible.builtin.fail:
+        msg: 'Jenkins is not running!'
+      when: not(ansible_facts.services['jenkins.service'] is defined)
+  
+      

@@ -1,0 +1,5 @@
+jenkins ansible_host=10.0.0.8 ansible_user=darrus ansible_ssh_pass=189379
+target ansible_host=10.0.0.7 ansible_user=darrus ansible_ssh_pass=189379
+
+[jenkins_servers]
+jenkins
