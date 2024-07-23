@@ -51,5 +51,9 @@
       ansible.builtin.fail:
         msg: 'Jenkins is not running!'
       when: not(ansible_facts.services['jenkins.service'] is defined)
+    - name: 'Open port 8080 in the firewall'
+      command: firewall-cmd --add-port=8080/tcp --permanent
+    - name: 'Reload firewall'
+      command: firewall-cmd --reload
   
       
